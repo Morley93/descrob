@@ -24,7 +24,11 @@ func main() {
 	var recents []descrob.Track
 	list := tview.NewList()
 	populateList := func() {
-		recents = descrob.GetRecentTracks(username, apiKey)
+		recents, err = descrob.GetRecentTracks(username, apiKey)
+		if err != nil {
+			//TODO: No way of signalling this back yet
+			panic(fmt.Sprintf("A recent track request failed: %v", err))
+		}
 		for i, track := range recents[:9] {
 			list.AddItem(track.Name, track.Artist.Name, rune(i+0x31), nil)
 		}
@@ -39,7 +43,7 @@ func main() {
 		return e
 	})
 	app := tview.NewApplication()
-	if err := app.SetRoot(list, true).Run(); err != nil {
-		panic(err)
-	}
+	app.SetRoot(list, true)
+
+	log.Fatal(app.Run())
 }

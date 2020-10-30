@@ -93,7 +93,7 @@ func (c LastFMWebClient) buildLoginForm() (url.Values, error) {
 func findCookieForDomain(cookieJar http.CookieJar, domain, name string) *http.Cookie {
 	domURL, err := url.Parse(domain)
 	if err != nil {
-		panic("Domain wouldn't parse")
+		return nil
 	}
 	for _, c := range cookieJar.Cookies(domURL) {
 		if c.Name == name {
@@ -120,7 +120,7 @@ func (c LastFMWebClient) DeleteTrack(track Track) error {
 
 	req, err := http.NewRequest(http.MethodPost, deleteURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("Error creating deletion request: %w", err)
 	}
 	req.Header.Add("Referer", "https://www.last.fm")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -128,7 +128,7 @@ func (c LastFMWebClient) DeleteTrack(track Track) error {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("Request failed: %w", err)
 	}
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
