@@ -31,7 +31,7 @@ func NewLastFMWebClient(username, password string) (*LastFMWebClient, error) {
 	}
 	err = webClient.startSession()
 	if err != nil {
-		return nil, fmt.Errorf("Error starting LastFM web session: %w", err)
+		return nil, fmt.Errorf("Error starting web session: %w", err)
 	}
 	return &webClient, nil
 }
@@ -52,6 +52,10 @@ func (c LastFMWebClient) startSession() error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Got unsuccessful status code (%d) on LastFM login", resp.StatusCode)
+	}
+	loginCsrfCookie := findCookieForDomain(c.client.Jar, "https://www.last.fm", "csrftoken")
+	if loginCsrfCookie == nil {
+		return errors.New("Login failed, check your credentials")
 	}
 	return nil
 }
@@ -96,7 +100,7 @@ func findCookieForDomain(cookieJar http.CookieJar, domain, name string) *http.Co
 			return c
 		}
 	}
-	panic("Couldn't find cookie " + name)
+	return nil
 }
 
 func (c LastFMWebClient) DeleteTrack(track Track) error {
