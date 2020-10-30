@@ -1,4 +1,4 @@
-package main
+package descrob
 
 import (
 	"encoding/json"
