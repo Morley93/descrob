@@ -104,27 +104,10 @@ func findCookieForDomain(cookieJar http.CookieJar, domain, name string) *http.Co
 }
 
 func (c LastFMWebClient) DeleteTrack(track Track) error {
-	deleteURL := fmt.Sprintf("https://www.last.fm/user/%s/library/delete", c.username)
-
-	csrfCookie := findCookieForDomain(c.client.Jar, "https://www.last.fm", "csrftoken")
-	if csrfCookie == nil {
-		return errors.New("Unable to find CSRF token for delete from established session")
-	}
-
-	form := url.Values{}
-	form.Add("artist_name", track.Artist.Name)
-	form.Add("track_name", track.Name)
-	form.Add("timestamp", track.Date.Timestamp)
-	form.Add("csrfmiddlewaretoken", csrfCookie.Value)
-	form.Add("ajax", "1")
-
-	req, err := http.NewRequest(http.MethodPost, deleteURL, strings.NewReader(form.Encode()))
+	req, err := c.buildDeleteRequest(track)
 	if err != nil {
 		return fmt.Errorf("Error creating deletion request: %w", err)
 	}
-	req.Header.Add("Referer", "https://www.last.fm")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Accept", "*/*")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -145,4 +128,31 @@ func (c LastFMWebClient) DeleteTrack(track Track) error {
 		return errors.New("Delete response indicate failure")
 	}
 	return nil
+}
+
+func (c LastFMWebClient) buildDeleteRequest(track Track) (*http.Request, error) {
+	deleteURL := fmt.Sprintf("https://www.last.fm/user/%s/library/delete", c.username)
+
+	csrfCookie := findCookieForDomain(c.client.Jar, "https://www.last.fm", "csrftoken")
+	if csrfCookie == nil {
+		return nil, errors.New("Unable to find CSRF token for delete from established session")
+	}
+
+	form := url.Values{}
+	form.Add("artist_name", track.Artist.Name)
+	form.Add("track_name", track.Name)
+	form.Add("timestamp", track.Date.Timestamp)
+	form.Add("csrfmiddlewaretoken", csrfCookie.Value)
+	form.Add("ajax", "1")
+
+	req, err := http.NewRequest(http.MethodPost, deleteURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("Error creating request: %w", err)
+	}
+
+	req.Header.Add("Referer", "https://www.last.fm")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Accept", "*/*")
+
+	return req, nil
 }
