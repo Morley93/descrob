@@ -7,6 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 type Track struct {
@@ -30,19 +33,35 @@ func main() {
 	password := os.Getenv("LASTFM_PASSWORD")
 	apiKey := os.Getenv("LASTFM_API_KEY")
 
+	fmt.Println("Getting your tracks...")
 	recents := getRecentTracks(username, apiKey)
 
+	fmt.Println("Starting a web session...")
 	webClient, err := NewLastFMWebClient(username, password)
 	if err != nil {
 		log.Fatalf("Failed to create a LastFM web client: %v", err)
 	}
 
-	trackToDelete := recents.RecentTracks.Tracks[0]
-	err = webClient.DeleteTrack(trackToDelete)
-	if err != nil {
-		log.Fatalf("Track deletion failed: %v", err)
+	list := tview.NewList()
+	populateList := func() {
+		recents = getRecentTracks(username, apiKey)
+		for i, track := range recents.RecentTracks.Tracks[:9] {
+			list.AddItem(track.Name, track.Artist.Name, rune(i+49), nil)
+		}
 	}
-	fmt.Println("Deleted track", trackToDelete)
+	populateList()
+	list.SetInputCapture(func(e *tcell.EventKey) *tcell.EventKey {
+		if e.Name() == "Backspace2" || e.Name() == "Delete" {
+			webClient.DeleteTrack(recents.RecentTracks.Tracks[list.GetCurrentItem()])
+			list.Clear()
+			populateList()
+		}
+		return e
+	})
+	app := tview.NewApplication()
+	if err := app.SetRoot(list, true).Run(); err != nil {
+		panic(err)
+	}
 }
 
 func getRecentTracks(username, apiKey string) RecentTrackResp {
