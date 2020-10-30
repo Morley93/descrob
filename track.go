@@ -16,13 +16,7 @@ type Track struct {
 	} `json:"date"`
 }
 
-type RecentTrackResp struct {
-	RecentTracks struct {
-		Tracks []Track `json:"track"`
-	} `json:"recenttracks"`
-}
-
-func GetRecentTracks(username, apiKey string) RecentTrackResp {
+func GetRecentTracks(username, apiKey string) []Track {
 	req, err := http.NewRequest(http.MethodGet, "https://ws.audioscrobbler.com/2.0", nil)
 	if err != nil {
 		panic(err)
@@ -43,10 +37,14 @@ func GetRecentTracks(username, apiKey string) RecentTrackResp {
 	if err != nil {
 		panic(err)
 	}
-	decoded := RecentTrackResp{}
+	decoded := struct {
+		RecentTracks struct {
+			Tracks []Track `json:"track"`
+		} `json:"recenttracks"`
+	}{}
 	err = json.Unmarshal(b, &decoded)
 	if err != nil {
 		panic(err)
 	}
-	return decoded
+	return decoded.RecentTracks.Tracks
 }
