@@ -9,11 +9,9 @@ Still in early stages of development, so only distributed via go toolchain for n
 Requires a Last.FM developer account and an application API key (see [here](https://www.last.fm/api)).
 
 ```shell
-go get github.com/Morley93/descrob
+go get github.com/Morley93/descrob/...
 
-export LASTFM_USERNAME=<username> LASTFM_PASSWORD=<password> LASTFM_API_KEY <api_key>
-
-$GOPATH/bin/descrob
+LASTFM_USERNAME=<username> LASTFM_PASSWORD=<password> LASTFM_API_KEY=<api_key> $GOPATH/bin/descrob
 ```
 
 ## Motivation
