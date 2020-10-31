@@ -68,5 +68,7 @@ func main() {
 			SetText(strings.Join(keybinds, " | ")), 1, 0, false)
 	app.SetRoot(flex, true)
 
-	log.Fatal(app.Run())
+	if err = app.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
