@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 type Track struct {
@@ -17,8 +18,8 @@ type Track struct {
 	} `json:"date"`
 }
 
-func GetRecentTracks(username, apiKey string) ([]Track, error) {
-	req, err := buildRecentTrackRequest(username, apiKey)
+func GetRecentTracks(username, apiKey string, page int) ([]Track, error) {
+	req, err := buildRecentTrackRequest(username, apiKey, page)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating recent track request: %w", err)
 	}
@@ -45,7 +46,7 @@ func GetRecentTracks(username, apiKey string) ([]Track, error) {
 	return respPayload.RecentTracks.Tracks, nil
 }
 
-func buildRecentTrackRequest(username, apiKey string) (*http.Request, error) {
+func buildRecentTrackRequest(username, apiKey string, page int) (*http.Request, error) {
 	req, err := http.NewRequest(http.MethodGet, "https://ws.audioscrobbler.com/2.0", nil)
 	if err != nil {
 		return nil, err
@@ -56,6 +57,8 @@ func buildRecentTrackRequest(username, apiKey string) (*http.Request, error) {
 	q.Add("user", username)
 	q.Add("api_key", apiKey)
 	q.Add("format", "json")
+	q.Add("page", strconv.Itoa(page))
+	q.Add("limit", "10")
 	req.URL.RawQuery = q.Encode()
 
 	return req, err
