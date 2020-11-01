@@ -50,20 +50,12 @@ func (a *app) installKeyHandlers() {
 	})
 }
 
-func (a *app) renderTracks() {
-	a.listCtrl.Clear()
-	for i, track := range a.tracks[:9] {
-		a.listCtrl.AddItem(track.Name, track.Artist.Name, rune(i+0x31), nil)
-	}
-}
-
 func (a *app) nextPage() error {
 	a.currentPage++
-	tracks, err := descrob.GetRecentTracks(a.user, a.apiKey, a.currentPage)
+	err := a.fetchTracks()
 	if err != nil {
-		return fmt.Errorf("Error getting track page: %w", err)
+		return err
 	}
-	a.tracks = tracks
 	a.renderTracks()
 	return nil
 }
@@ -73,13 +65,28 @@ func (a *app) prevPage() error {
 		return nil
 	}
 	a.currentPage--
+	err := a.fetchTracks()
+	if err != nil {
+		return err
+	}
+	a.renderTracks()
+	return nil
+}
+
+func (a *app) fetchTracks() error {
 	tracks, err := descrob.GetRecentTracks(a.user, a.apiKey, a.currentPage)
 	if err != nil {
 		return fmt.Errorf("Error getting track page: %w", err)
 	}
 	a.tracks = tracks
-	a.renderTracks()
 	return nil
+}
+
+func (a *app) renderTracks() {
+	a.listCtrl.Clear()
+	for i, track := range a.tracks[:9] {
+		a.listCtrl.AddItem(track.Name, track.Artist.Name, rune(i+0x31), nil)
+	}
 }
 
 func createTviewApp() (*tview.Application, *tview.List) {
