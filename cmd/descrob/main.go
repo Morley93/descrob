@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/Morley93/descrob"
+	dhttp "github.com/Morley93/descrob/http"
 )
 
 func main() {
@@ -19,8 +21,17 @@ func main() {
 		log.Fatalf("Failed to create a LastFM web client: %v", err)
 	}
 
-	app := newTUIApp(webClient, username, apiKey)
-	app.nextPage()
+	trackExplorer := descrob.NewScrobbleExplorer(username, &dhttp.HTTPScrobbleRetriever{
+		Client: *http.DefaultClient,
+		APIKey: apiKey,
+	})
+
+	app := newTUIApp(webClient, trackExplorer, username, apiKey)
+	initialScrobbles, err := trackExplorer.FirstPage()
+	if err != nil {
+		log.Fatalf("Failed to get initial page of recent tracks: %v", err)
+	}
+	app.renderScrobbles(initialScrobbles)
 
 	if err = app.Run(); err != nil {
 		log.Fatal(err)

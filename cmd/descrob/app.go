@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Morley93/descrob"
@@ -11,20 +10,21 @@ import (
 
 type app struct {
 	*tview.Application
-	listCtrl    *tview.List
-	webClient   *descrob.LastFMWebClient
-	currentPage int
-	tracks      []descrob.Track
-	user        string
-	apiKey      string
+	listCtrl  *tview.List
+	webClient *descrob.LastFMWebClient
+	expl      *descrob.ScrobbleExplorer
+	tracks    []descrob.Scrobble
+	user      string
+	apiKey    string
 }
 
-func newTUIApp(webClient *descrob.LastFMWebClient, user, apiKey string) *app {
+func newTUIApp(webClient *descrob.LastFMWebClient, expl *descrob.ScrobbleExplorer, user, apiKey string) *app {
 	tuiApp, listCtrl := createTviewApp()
 	app := app{
 		Application: tuiApp,
 		listCtrl:    listCtrl,
 		webClient:   webClient,
+		expl:        expl,
 		user:        user,
 		apiKey:      apiKey,
 	}
@@ -36,56 +36,27 @@ func (a *app) installKeyHandlers() {
 	a.SetInputCapture(func(e *tcell.EventKey) *tcell.EventKey {
 		switch e.Key() {
 		case tcell.KeyBackspace2:
-			// TODO: Handle error
-			a.webClient.DeleteTrack(a.tracks[a.listCtrl.GetCurrentItem()])
-			a.renderTracks()
+			a.webClient.DeleteTrack(a.expl.CurrentPage()[a.listCtrl.GetCurrentItem()])
+			// TODO: Handle errors
+			scrobs, _ := a.expl.RefreshPage()
+			a.renderScrobbles(scrobs)
 		case tcell.KeyCtrlN:
 			// TODO: Handle error
-			a.nextPage()
+			scrobs, _ := a.expl.NextPage()
+			a.renderScrobbles(scrobs)
 		case tcell.KeyCtrlP:
 			// TODO Handle error
-			a.prevPage()
+			scrobs, _ := a.expl.PrevPage()
+			a.renderScrobbles(scrobs)
 		}
 		return e
 	})
 }
 
-func (a *app) nextPage() error {
-	a.currentPage++
-	err := a.fetchTracks()
-	if err != nil {
-		return err
-	}
-	a.renderTracks()
-	return nil
-}
-
-func (a *app) prevPage() error {
-	if a.currentPage == 1 {
-		return nil
-	}
-	a.currentPage--
-	err := a.fetchTracks()
-	if err != nil {
-		return err
-	}
-	a.renderTracks()
-	return nil
-}
-
-func (a *app) fetchTracks() error {
-	tracks, err := descrob.GetRecentTracks(a.user, a.apiKey, a.currentPage)
-	if err != nil {
-		return fmt.Errorf("Error getting track page: %w", err)
-	}
-	a.tracks = tracks
-	return nil
-}
-
-func (a *app) renderTracks() {
+func (a *app) renderScrobbles(scrobbles []descrob.Scrobble) {
 	a.listCtrl.Clear()
-	for i, track := range a.tracks[:9] {
-		a.listCtrl.AddItem(track.Name, track.Artist.Name, rune(i+0x31), nil)
+	for i, scrobble := range scrobbles[:9] {
+		a.listCtrl.AddItem(scrobble.Name, scrobble.Artist, rune(i+0x31), nil)
 	}
 }
 

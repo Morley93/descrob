@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -103,7 +104,7 @@ func findCookieForDomain(cookieJar http.CookieJar, domain, name string) *http.Co
 	return nil
 }
 
-func (c LastFMWebClient) DeleteTrack(track Track) error {
+func (c LastFMWebClient) DeleteTrack(track Scrobble) error {
 	req, err := c.buildDeleteRequest(track)
 	if err != nil {
 		return fmt.Errorf("Error creating deletion request: %w", err)
@@ -130,7 +131,7 @@ func (c LastFMWebClient) DeleteTrack(track Track) error {
 	return nil
 }
 
-func (c LastFMWebClient) buildDeleteRequest(track Track) (*http.Request, error) {
+func (c LastFMWebClient) buildDeleteRequest(track Scrobble) (*http.Request, error) {
 	deleteURL := fmt.Sprintf("https://www.last.fm/user/%s/library/delete", c.username)
 
 	csrfCookie := findCookieForDomain(c.client.Jar, "https://www.last.fm", "csrftoken")
@@ -139,9 +140,9 @@ func (c LastFMWebClient) buildDeleteRequest(track Track) (*http.Request, error) 
 	}
 
 	form := url.Values{}
-	form.Add("artist_name", track.Artist.Name)
+	form.Add("artist_name", track.Artist)
 	form.Add("track_name", track.Name)
-	form.Add("timestamp", track.Date.Timestamp)
+	form.Add("timestamp", strconv.Itoa(int(track.Datetime.Unix())))
 	form.Add("csrfmiddlewaretoken", csrfCookie.Value)
 	form.Add("ajax", "1")
 

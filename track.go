@@ -1,65 +1,76 @@
 package descrob
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strconv"
+	"time"
 )
 
-type Track struct {
-	Name   string `json:"name"`
-	Artist struct {
-		Name string `json:"#text"`
-	} `json:"artist"`
-	Date struct {
-		Timestamp string `json:"uts"`
-	} `json:"date"`
+type Scrobble struct {
+	Name     string
+	Artist   string
+	Datetime time.Time
 }
 
-func GetRecentTracks(username, apiKey string, page int) ([]Track, error) {
-	req, err := buildRecentTrackRequest(username, apiKey, page)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating recent track request: %w", err)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch recent tracks: %w", err)
-	}
-
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading response: %w", err)
-	}
-	respPayload := struct {
-		RecentTracks struct {
-			Tracks []Track `json:"track"`
-		} `json:"recenttracks"`
-	}{}
-	err = json.Unmarshal(b, &respPayload)
-	if err != nil {
-		return nil, fmt.Errorf("Unexpected response: %v", string(b))
-	}
-	return respPayload.RecentTracks.Tracks, nil
+type ScrobbleExplorer struct {
+	pageCache [][]Scrobble
+	sr        ScrobbleRetriever
+	pageIdx   int
+	username  string
 }
 
-func buildRecentTrackRequest(username, apiKey string, page int) (*http.Request, error) {
-	req, err := http.NewRequest(http.MethodGet, "https://ws.audioscrobbler.com/2.0", nil)
-	if err != nil {
-		return nil, err
+type ScrobbleRetriever interface {
+	FetchScrobblePage(username string, page int) ([]Scrobble, error)
+}
+
+func NewScrobbleExplorer(username string, sr ScrobbleRetriever) *ScrobbleExplorer {
+	return &ScrobbleExplorer{
+		pageCache: [][]Scrobble{},
+		sr:        sr,
+		username:  username,
 	}
+}
 
-	q := req.URL.Query()
-	q.Add("method", "user.getrecenttracks")
-	q.Add("user", username)
-	q.Add("api_key", apiKey)
-	q.Add("format", "json")
-	q.Add("page", strconv.Itoa(page))
-	q.Add("limit", "10")
-	req.URL.RawQuery = q.Encode()
+func (rte *ScrobbleExplorer) CurrentPage() []Scrobble {
+	return rte.pageCache[rte.pageIdx]
+}
 
-	return req, err
+func (rte *ScrobbleExplorer) FirstPage() ([]Scrobble, error) {
+	rte.pageIdx = 0
+	if len(rte.pageCache) == 0 {
+		tracks, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx+1)
+		if err != nil {
+			return []Scrobble{}, fmt.Errorf("Failed to fetch page 1: %w", err)
+		}
+		rte.pageCache = append(rte.pageCache, tracks)
+	}
+	return rte.pageCache[0], nil
+}
+
+func (rte *ScrobbleExplorer) NextPage() ([]Scrobble, error) {
+	rte.pageIdx++
+	if len(rte.pageCache) < rte.pageIdx+1 {
+		tracks, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx)
+		if err != nil {
+			return []Scrobble{}, fmt.Errorf("Failed to fetch page %d: %w", rte.pageIdx+1, err)
+		}
+		rte.pageCache = append(rte.pageCache, tracks)
+	}
+	return rte.pageCache[rte.pageIdx], nil
+}
+
+func (rte *ScrobbleExplorer) PrevPage() ([]Scrobble, error) {
+	if rte.pageIdx == 0 {
+		return rte.pageCache[0], nil
+	}
+	rte.pageIdx--
+	return rte.pageCache[rte.pageIdx], nil
+}
+
+func (rte *ScrobbleExplorer) RefreshPage() ([]Scrobble, error) {
+	tracks, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx+1)
+	if err != nil {
+		return []Scrobble{}, fmt.Errorf("Failed to fetch page %d: %w", rte.pageIdx+1, err)
+	}
+	rte.pageCache[rte.pageIdx] = tracks
+	return tracks, nil
 }
