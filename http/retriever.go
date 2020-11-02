@@ -6,24 +6,22 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/Morley93/descrob"
 )
 
 type HTTPScrobbleRetriever struct {
-	Client http.Client
-	APIKey string
+	client   *http.Client
+	apiKey   string
+	pageSize int
 }
 
-type trackResponse struct {
-	Name   string `json:"name"`
-	Artist struct {
-		Name string `json:"#text"`
-	} `json:"artist"`
-	Date struct {
-		Timestamp string `json:"uts"`
-	} `json:"date"`
+func NewHTTPScrobbleRetriever(client *http.Client, apiKey string, pageSize int) *HTTPScrobbleRetriever {
+	return &HTTPScrobbleRetriever{
+		client:   client,
+		apiKey:   apiKey,
+		pageSize: pageSize,
+	}
 }
 
 func (sr *HTTPScrobbleRetriever) FetchScrobblePage(username string, page int) ([]descrob.Scrobble, error) {
@@ -32,7 +30,7 @@ func (sr *HTTPScrobbleRetriever) FetchScrobblePage(username string, page int) ([
 		return nil, fmt.Errorf("Error creating recent track request: %w", err)
 	}
 
-	resp, err := sr.Client.Do(req)
+	resp, err := sr.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch recent tracks: %w", err)
 	}
@@ -42,16 +40,12 @@ func (sr *HTTPScrobbleRetriever) FetchScrobblePage(username string, page int) ([
 	if err != nil {
 		return nil, fmt.Errorf("Error reading response: %w", err)
 	}
-	respPayload := struct {
-		RecentTracks struct {
-			Tracks []trackResponse `json:"track"`
-		} `json:"recenttracks"`
-	}{}
+	respPayload := recentTracksResponse{}
 	err = json.Unmarshal(b, &respPayload)
 	if err != nil {
 		return nil, fmt.Errorf("Unexpected response: %v", string(b))
 	}
-	return mapTracksResponse(respPayload.RecentTracks.Tracks), nil
+	return respPayload.mapToScrobbles(), nil
 }
 
 func (sr *HTTPScrobbleRetriever) buildRecentTrackRequest(username string, page int) (*http.Request, error) {
@@ -63,28 +57,11 @@ func (sr *HTTPScrobbleRetriever) buildRecentTrackRequest(username string, page i
 	q := req.URL.Query()
 	q.Add("method", "user.getrecenttracks")
 	q.Add("user", username)
-	q.Add("api_key", sr.APIKey)
+	q.Add("api_key", sr.apiKey)
 	q.Add("format", "json")
 	q.Add("page", strconv.Itoa(page))
-	q.Add("limit", "10")
+	q.Add("limit", strconv.Itoa(sr.pageSize))
 	req.URL.RawQuery = q.Encode()
 
 	return req, err
-}
-
-func mapTracksResponse(respElems []trackResponse) []descrob.Scrobble {
-	tracks := []descrob.Scrobble{}
-	for _, respTrack := range respElems {
-		scrobbleTimestamp, err := strconv.Atoi(respTrack.Date.Timestamp)
-		if err != nil {
-			scrobbleTimestamp = 0
-		}
-		track := descrob.Scrobble{
-			Name:     respTrack.Name,
-			Artist:   respTrack.Artist.Name,
-			Datetime: time.Unix(int64(scrobbleTimestamp), 0),
-		}
-		tracks = append(tracks, track)
-	}
-	return tracks
 }

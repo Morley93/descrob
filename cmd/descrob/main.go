@@ -21,10 +21,8 @@ func main() {
 		log.Fatalf("Failed to create a LastFM web client: %v", err)
 	}
 
-	scrobbleExplorer := descrob.NewScrobbleExplorer(username, &dhttp.HTTPScrobbleRetriever{
-		Client: *http.DefaultClient,
-		APIKey: apiKey,
-	})
+	retriever := dhttp.NewHTTPScrobbleRetriever(http.DefaultClient, apiKey, 50)
+	scrobbleExplorer := descrob.NewScrobbleExplorer(username, retriever)
 
 	app := newTUIApp(webClient, scrobbleExplorer, username, apiKey)
 	initialScrobbles, err := scrobbleExplorer.FirstPage()
