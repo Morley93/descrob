@@ -37,11 +37,11 @@ func (rte *ScrobbleExplorer) CurrentPage() []Scrobble {
 func (rte *ScrobbleExplorer) FirstPage() ([]Scrobble, error) {
 	rte.pageIdx = 0
 	if len(rte.pageCache) == 0 {
-		tracks, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx+1)
+		scrobbles, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx+1)
 		if err != nil {
 			return []Scrobble{}, fmt.Errorf("Failed to fetch page 1: %w", err)
 		}
-		rte.pageCache = append(rte.pageCache, tracks)
+		rte.pageCache = append(rte.pageCache, scrobbles)
 	}
 	return rte.pageCache[0], nil
 }
@@ -49,11 +49,11 @@ func (rte *ScrobbleExplorer) FirstPage() ([]Scrobble, error) {
 func (rte *ScrobbleExplorer) NextPage() ([]Scrobble, error) {
 	rte.pageIdx++
 	if len(rte.pageCache) < rte.pageIdx+1 {
-		tracks, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx)
+		scrobbles, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx)
 		if err != nil {
 			return []Scrobble{}, fmt.Errorf("Failed to fetch page %d: %w", rte.pageIdx+1, err)
 		}
-		rte.pageCache = append(rte.pageCache, tracks)
+		rte.pageCache = append(rte.pageCache, scrobbles)
 	}
 	return rte.pageCache[rte.pageIdx], nil
 }
@@ -67,10 +67,10 @@ func (rte *ScrobbleExplorer) PrevPage() ([]Scrobble, error) {
 }
 
 func (rte *ScrobbleExplorer) RefreshPage() ([]Scrobble, error) {
-	tracks, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx+1)
+	scrobbles, err := rte.sr.FetchScrobblePage(rte.username, rte.pageIdx+1)
 	if err != nil {
 		return []Scrobble{}, fmt.Errorf("Failed to fetch page %d: %w", rte.pageIdx+1, err)
 	}
-	rte.pageCache[rte.pageIdx] = tracks
-	return tracks, nil
+	rte.pageCache[rte.pageIdx] = scrobbles
+	return scrobbles, nil
 }
