@@ -1,7 +1,7 @@
 package descrob
 
 import (
-	"fmt"
+	"math"
 	"time"
 )
 
@@ -12,68 +12,94 @@ type Scrobble struct {
 }
 
 type ScrobbleExplorer struct {
-	pageCache [][]Scrobble
-	sr        ScrobbleRetriever
-	pageIdx   int
-	username  string
+	cache       []Scrobble
+	sr          ScrobbleRetriever
+	username    string
+	windowSize  int
+	windowStart int
 }
 
 type ScrobbleRetriever interface {
 	FetchScrobblePage(username string, page int) ([]Scrobble, error)
+	PageSize() int
 }
 
-func NewScrobbleExplorer(username string, sr ScrobbleRetriever) *ScrobbleExplorer {
+func NewScrobbleExplorer(username string, sr ScrobbleRetriever, windowSize int) *ScrobbleExplorer {
 	return &ScrobbleExplorer{
-		pageCache: [][]Scrobble{},
-		sr:        sr,
-		username:  username,
+		cache:      []Scrobble{},
+		sr:         sr,
+		username:   username,
+		windowSize: windowSize,
 	}
 }
 
 func (se *ScrobbleExplorer) CurrentPage() []Scrobble {
-	if len(se.pageCache) == 0 {
-		return []Scrobble{}
-	}
-	return se.pageCache[se.pageIdx]
+	windowStart := int(math.Max(0, float64(se.windowStart)))
+	windowEnd := int(math.Min(float64(len(se.cache)), float64(se.windowStart)))
+	return se.cache[windowStart:windowEnd]
 }
 
 func (se *ScrobbleExplorer) FirstPage() ([]Scrobble, error) {
-	se.pageIdx = 0
-	if len(se.pageCache) == 0 {
-		scrobbles, err := se.sr.FetchScrobblePage(se.username, se.pageIdx+1)
+	if len(se.cache) == 0 {
+		scrobbles, err := se.sr.FetchScrobblePage(se.username, 0)
 		if err != nil {
-			return []Scrobble{}, fmt.Errorf("Failed to fetch page 1: %w", err)
+			return nil, err
 		}
-		se.pageCache = append(se.pageCache, scrobbles)
+		for _, scrob := range scrobbles {
+			se.cache = append(se.cache, scrob)
+		}
 	}
-	return se.pageCache[0], nil
+	windowEnd := int(math.Min(float64(se.windowStart+se.windowSize), float64(len(se.cache))))
+	return se.cache[se.windowStart:windowEnd], nil
 }
 
 func (se *ScrobbleExplorer) NextPage() ([]Scrobble, error) {
-	se.pageIdx++
-	if len(se.pageCache) < se.pageIdx+1 {
-		scrobbles, err := se.sr.FetchScrobblePage(se.username, se.pageIdx)
-		if err != nil {
-			return []Scrobble{}, fmt.Errorf("Failed to fetch page %d: %w", se.pageIdx+1, err)
-		}
-		se.pageCache = append(se.pageCache, scrobbles)
+	if len(se.cache) < se.windowStart+se.windowSize {
+		se.BufferNextWindow()
 	}
-	return se.pageCache[se.pageIdx], nil
+	se.windowStart += se.windowSize
+	return se.cache[se.windowStart : se.windowStart+se.windowSize], nil
 }
 
 func (se *ScrobbleExplorer) PrevPage() ([]Scrobble, error) {
-	if se.pageIdx == 0 {
-		return se.pageCache[0], nil
+	if se.windowStart == 0 {
+		return se.cache[0:se.windowSize], nil
 	}
-	se.pageIdx--
-	return se.pageCache[se.pageIdx], nil
+	se.windowStart -= se.windowSize
+	return se.cache[se.windowStart : se.windowStart+se.windowSize], nil
 }
 
 func (se *ScrobbleExplorer) RefreshPage() ([]Scrobble, error) {
-	scrobbles, err := se.sr.FetchScrobblePage(se.username, se.pageIdx+1)
-	if err != nil {
-		return []Scrobble{}, fmt.Errorf("Failed to fetch page %d: %w", se.pageIdx+1, err)
+	return nil, nil
+}
+
+func (se *ScrobbleExplorer) BufferWindows(windows int) {
+	var scrobblesFetched int
+	targetScrobblesFetched := windows * se.windowSize
+	lastPageFetched := len(se.cache) / se.sr.PageSize()
+	if len(se.cache) == 0 {
+		lastPageFetched = -1
 	}
-	se.pageCache[se.pageIdx] = scrobbles
-	return scrobbles, nil
+	for {
+		lastPageFetched++
+		newScrobbles, err := se.sr.FetchScrobblePage(se.username, lastPageFetched)
+		if err != nil {
+			panic(err)
+		}
+		scrobblesFetched += len(newScrobbles)
+		for _, s := range newScrobbles {
+			se.cache = append(se.cache, s)
+		}
+		if scrobblesFetched >= targetScrobblesFetched || len(newScrobbles) < se.sr.PageSize() {
+			break
+		}
+	}
+}
+
+func (se *ScrobbleExplorer) BufferNextWindow() {
+	se.BufferWindows(1)
+}
+
+func (se *ScrobbleExplorer) BufferedWindows() int {
+	return (len(se.cache) - (se.windowStart + se.windowSize)) / se.windowSize
 }

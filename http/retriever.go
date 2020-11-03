@@ -59,9 +59,13 @@ func (sr *HTTPScrobbleRetriever) buildRecentTrackRequest(username string, page i
 	q.Add("user", username)
 	q.Add("api_key", sr.apiKey)
 	q.Add("format", "json")
-	q.Add("page", strconv.Itoa(page))
+	q.Add("page", strconv.Itoa(page+1))
 	q.Add("limit", strconv.Itoa(sr.pageSize))
 	req.URL.RawQuery = q.Encode()
 
 	return req, err
+}
+
+func (sr *HTTPScrobbleRetriever) PageSize() int {
+	return sr.pageSize
 }

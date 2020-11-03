@@ -43,6 +43,10 @@ func (a *app) installKeyHandlers() {
 		case tcell.KeyCtrlN:
 			// TODO: Handle error
 			scrobs, _ := a.expl.NextPage()
+			if a.expl.BufferedWindows() < 3 {
+				// TODO: There's no locking around this this
+				go a.expl.BufferWindows(3)
+			}
 			a.renderScrobbles(scrobs)
 		case tcell.KeyCtrlP:
 			// TODO Handle error
