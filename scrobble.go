@@ -35,9 +35,8 @@ func NewScrobbleExplorer(username string, sr ScrobbleRetriever, windowSize int) 
 }
 
 func (se *ScrobbleExplorer) CurrentPage() []Scrobble {
-	windowStart := int(math.Max(0, float64(se.windowStart)))
 	windowEnd := int(math.Min(float64(len(se.cache)), float64(se.windowStart+se.windowSize)))
-	return se.cache[windowStart:windowEnd]
+	return se.cache[se.windowStart:windowEnd]
 }
 
 func (se *ScrobbleExplorer) FirstPage() ([]Scrobble, error) {
