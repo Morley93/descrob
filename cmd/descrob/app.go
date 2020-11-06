@@ -50,8 +50,7 @@ func (a *app) installKeyHandlers() {
 			}
 			a.renderScrobbles(scrobs)
 		case tcell.KeyCtrlP:
-			// TODO Handle error
-			scrobs, _ := a.expl.PrevPage()
+			scrobs := a.expl.PrevPage()
 			a.renderScrobbles(scrobs)
 		}
 		return e

@@ -62,12 +62,12 @@ func (se *ScrobbleExplorer) NextPage() ([]Scrobble, error) {
 	return se.cache[se.windowStart : se.windowStart+se.windowSize], nil
 }
 
-func (se *ScrobbleExplorer) PrevPage() ([]Scrobble, error) {
+func (se *ScrobbleExplorer) PrevPage() []Scrobble {
 	if se.windowStart == 0 {
-		return se.cache[0:se.windowSize], nil
+		return se.cache[0:se.windowSize]
 	}
 	se.windowStart -= se.windowSize
-	return se.cache[se.windowStart : se.windowStart+se.windowSize], nil
+	return se.cache[se.windowStart : se.windowStart+se.windowSize]
 }
 
 func (se *ScrobbleExplorer) BufferNextWindow() error {
