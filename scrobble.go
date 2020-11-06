@@ -46,7 +46,7 @@ func (se *ScrobbleExplorer) FirstPage() ([]Scrobble, error) {
 			return nil, fmt.Errorf("Error populating cache for first page: %w", err)
 		}
 	}
-	windowEnd := int(math.Min(float64(se.windowStart+se.windowSize), float64(len(se.cache))))
+	windowEnd := int(math.Min(float64(se.windowSize), float64(len(se.cache))))
 	return se.cache[0:windowEnd], nil
 }
 
