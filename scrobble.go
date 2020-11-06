@@ -70,6 +70,10 @@ func (se *ScrobbleExplorer) PrevPage() ([]Scrobble, error) {
 	return se.cache[se.windowStart : se.windowStart+se.windowSize], nil
 }
 
+func (se *ScrobbleExplorer) BufferNextWindow() error {
+	return se.BufferWindows(1)
+}
+
 func (se *ScrobbleExplorer) BufferWindows(windows int) error {
 	var scrobblesFetched int
 	targetScrobblesFetched := windows * se.windowSize
@@ -94,15 +98,13 @@ func (se *ScrobbleExplorer) BufferWindows(windows int) error {
 	return nil
 }
 
-func (se *ScrobbleExplorer) BufferNextWindow() error {
-	return se.BufferWindows(1)
+func (se *ScrobbleExplorer) PreBufferedWindows() int {
+	currWindowEnd := se.windowStart + se.windowSize
+	cachedAfterWindow := len(se.cache) - currWindowEnd
+	return int(math.Max(float64(0), float64(cachedAfterWindow/se.windowSize)))
 }
 
-func (se *ScrobbleExplorer) BufferedWindows() int {
-	return (len(se.cache) - (se.windowStart + se.windowSize)) / se.windowSize
-}
-
-func (se *ScrobbleExplorer) UncacheScrobble(scrobble Scrobble) {
+func (se *ScrobbleExplorer) Uncache(scrobble Scrobble) {
 	for indInPage, cacheItem := range se.CurrentPage() {
 		if cacheItem == scrobble {
 			cacheInd := se.windowStart + indInPage

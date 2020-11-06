@@ -39,12 +39,12 @@ func (a *app) installKeyHandlers() {
 			scrobbleToDelete := a.expl.CurrentPage()[a.listCtrl.GetCurrentItem()]
 			// TODO: Handle errors
 			a.webClient.DeleteTrack(scrobbleToDelete)
-			a.expl.UncacheScrobble(scrobbleToDelete)
+			a.expl.Uncache(scrobbleToDelete)
 			a.renderScrobbles(a.expl.CurrentPage())
 		case tcell.KeyCtrlN:
 			// TODO: Handle error
 			scrobs, _ := a.expl.NextPage()
-			if a.expl.BufferedWindows() < 3 {
+			if a.expl.PreBufferedWindows() < 3 {
 				// TODO: There's no locking around this this
 				go a.expl.BufferWindows(3)
 			}
