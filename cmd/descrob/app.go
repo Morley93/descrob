@@ -36,10 +36,11 @@ func (a *app) installKeyHandlers() {
 	a.SetInputCapture(func(e *tcell.EventKey) *tcell.EventKey {
 		switch e.Key() {
 		case tcell.KeyBackspace2:
-			a.webClient.DeleteTrack(a.expl.CurrentPage()[a.listCtrl.GetCurrentItem()])
+			scrobbleToDelete := a.expl.CurrentPage()[a.listCtrl.GetCurrentItem()]
 			// TODO: Handle errors
-			scrobs, _ := a.expl.RefreshPage()
-			a.renderScrobbles(scrobs)
+			a.webClient.DeleteTrack(scrobbleToDelete)
+			a.expl.UncacheScrobble(scrobbleToDelete)
+			a.renderScrobbles(a.expl.CurrentPage())
 		case tcell.KeyCtrlN:
 			// TODO: Handle error
 			scrobs, _ := a.expl.NextPage()

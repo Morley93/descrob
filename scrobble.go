@@ -36,7 +36,7 @@ func NewScrobbleExplorer(username string, sr ScrobbleRetriever, windowSize int) 
 
 func (se *ScrobbleExplorer) CurrentPage() []Scrobble {
 	windowStart := int(math.Max(0, float64(se.windowStart)))
-	windowEnd := int(math.Min(float64(len(se.cache)), float64(se.windowStart)))
+	windowEnd := int(math.Min(float64(len(se.cache)), float64(se.windowStart+se.windowSize)))
 	return se.cache[windowStart:windowEnd]
 }
 
@@ -70,10 +70,6 @@ func (se *ScrobbleExplorer) PrevPage() ([]Scrobble, error) {
 	return se.cache[se.windowStart : se.windowStart+se.windowSize], nil
 }
 
-func (se *ScrobbleExplorer) RefreshPage() ([]Scrobble, error) {
-	return nil, nil
-}
-
 func (se *ScrobbleExplorer) BufferWindows(windows int) error {
 	var scrobblesFetched int
 	targetScrobblesFetched := windows * se.windowSize
@@ -104,4 +100,13 @@ func (se *ScrobbleExplorer) BufferNextWindow() error {
 
 func (se *ScrobbleExplorer) BufferedWindows() int {
 	return (len(se.cache) - (se.windowStart + se.windowSize)) / se.windowSize
+}
+
+func (se *ScrobbleExplorer) UncacheScrobble(scrobble Scrobble) {
+	for indInPage, cacheItem := range se.CurrentPage() {
+		if cacheItem == scrobble {
+			cacheInd := se.windowStart + indInPage
+			se.cache = append(se.cache[:cacheInd], se.cache[cacheInd+1:]...)
+		}
+	}
 }
