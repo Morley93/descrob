@@ -99,8 +99,8 @@ func (se *ScrobbleExplorer) BufferWindows(windows int) error {
 
 func (se *ScrobbleExplorer) PreBufferedWindows() int {
 	currWindowEnd := se.windowStart + se.windowSize
-	cachedAfterWindow := len(se.cache) - currWindowEnd
-	return int(math.Max(float64(0), float64(cachedAfterWindow/se.windowSize)))
+	cachedAfterWindow := int(math.Max(float64(0), float64(len(se.cache)-currWindowEnd)))
+	return cachedAfterWindow / se.windowSize
 }
 
 func (se *ScrobbleExplorer) Uncache(scrobble Scrobble) {
