@@ -23,7 +23,7 @@ func main() {
 
 	retriever := dhttp.NewHTTPScrobbleRetriever(http.DefaultClient, apiKey, 50)
 	scrobbleExplorer := descrob.NewScrobbleExplorer(username, retriever, 10)
-	scrobbleExplorer.BufferWindows(5)
+	scrobbleExplorer.BufferWindows(10)
 
 	app := newTUIApp(webClient, scrobbleExplorer, username, apiKey)
 	initialScrobbles, err := scrobbleExplorer.FirstPage()

@@ -1,6 +1,7 @@
 package descrob
 
 import (
+	"fmt"
 	"math"
 	"time"
 )
@@ -20,7 +21,7 @@ type ScrobbleExplorer struct {
 }
 
 type ScrobbleRetriever interface {
-	FetchScrobblePage(username string, page int) ([]Scrobble, error)
+	FetchScrobbles(username string, before *time.Time) ([]Scrobble, error)
 	PageSize() int
 }
 
@@ -41,21 +42,21 @@ func (se *ScrobbleExplorer) CurrentPage() []Scrobble {
 
 func (se *ScrobbleExplorer) FirstPage() ([]Scrobble, error) {
 	if len(se.cache) == 0 {
-		scrobbles, err := se.sr.FetchScrobblePage(se.username, 0)
+		err := se.BufferNextWindow()
 		if err != nil {
-			return nil, err
-		}
-		for _, scrob := range scrobbles {
-			se.cache = append(se.cache, scrob)
+			return nil, fmt.Errorf("Error populating cache for first page: %w", err)
 		}
 	}
 	windowEnd := int(math.Min(float64(se.windowStart+se.windowSize), float64(len(se.cache))))
-	return se.cache[se.windowStart:windowEnd], nil
+	return se.cache[0:windowEnd], nil
 }
 
 func (se *ScrobbleExplorer) NextPage() ([]Scrobble, error) {
 	if len(se.cache) < se.windowStart+se.windowSize {
-		se.BufferNextWindow()
+		err := se.BufferNextWindow()
+		if err != nil {
+			return nil, fmt.Errorf("Error populating cache for next page: %w", err)
+		}
 	}
 	se.windowStart += se.windowSize
 	return se.cache[se.windowStart : se.windowStart+se.windowSize], nil
@@ -73,18 +74,18 @@ func (se *ScrobbleExplorer) RefreshPage() ([]Scrobble, error) {
 	return nil, nil
 }
 
-func (se *ScrobbleExplorer) BufferWindows(windows int) {
+func (se *ScrobbleExplorer) BufferWindows(windows int) error {
 	var scrobblesFetched int
 	targetScrobblesFetched := windows * se.windowSize
-	lastPageFetched := len(se.cache) / se.sr.PageSize()
-	if len(se.cache) == 0 {
-		lastPageFetched = -1
-	}
 	for {
-		lastPageFetched++
-		newScrobbles, err := se.sr.FetchScrobblePage(se.username, lastPageFetched)
+		var before *time.Time
+		if len(se.cache) > 0 {
+			before = &se.cache[len(se.cache)-1].Datetime
+		}
+
+		newScrobbles, err := se.sr.FetchScrobbles(se.username, before)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("Error fetching scrobbles: %w", err)
 		}
 		scrobblesFetched += len(newScrobbles)
 		for _, s := range newScrobbles {
@@ -94,10 +95,11 @@ func (se *ScrobbleExplorer) BufferWindows(windows int) {
 			break
 		}
 	}
+	return nil
 }
 
-func (se *ScrobbleExplorer) BufferNextWindow() {
-	se.BufferWindows(1)
+func (se *ScrobbleExplorer) BufferNextWindow() error {
+	return se.BufferWindows(1)
 }
 
 func (se *ScrobbleExplorer) BufferedWindows() int {
