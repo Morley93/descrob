@@ -87,9 +87,7 @@ func (se *ScrobbleExplorer) BufferWindows(windows int) error {
 			return fmt.Errorf("Error fetching scrobbles: %w", err)
 		}
 		scrobblesFetched += len(newScrobbles)
-		for _, s := range newScrobbles {
-			se.cache = append(se.cache, s)
-		}
+		se.cache = append(se.cache, newScrobbles...)
 		if scrobblesFetched >= targetScrobblesFetched || len(newScrobbles) < se.sr.PageSize() {
 			break
 		}
