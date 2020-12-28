@@ -53,6 +53,12 @@ func (a *app) installKeyHandlers() {
 			scrobs := a.expl.PrevPage()
 			a.renderScrobbles(scrobs)
 		}
+		switch e.Rune() {
+		case 'j':
+			a.listCtrl.SetCurrentItem(a.listCtrl.GetCurrentItem() + 1)
+		case 'k':
+			a.listCtrl.SetCurrentItem(a.listCtrl.GetCurrentItem() - 1)
+		}
 		return e
 	})
 }
