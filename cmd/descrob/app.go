@@ -14,8 +14,6 @@ type app struct {
 	webClient *descrob.LastFMWebClient
 	expl      *descrob.ScrobbleExplorer
 	tracks    []descrob.Scrobble
-	user      string
-	apiKey    string
 }
 
 func newTUIApp(webClient *descrob.LastFMWebClient, expl *descrob.ScrobbleExplorer, user, apiKey string) *app {
@@ -25,8 +23,6 @@ func newTUIApp(webClient *descrob.LastFMWebClient, expl *descrob.ScrobbleExplore
 		listCtrl:    listCtrl,
 		webClient:   webClient,
 		expl:        expl,
-		user:        user,
-		apiKey:      apiKey,
 	}
 	app.installKeyHandlers()
 	return &app
