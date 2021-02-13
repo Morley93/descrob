@@ -25,7 +25,7 @@ func main() {
 	scrobbleExplorer := descrob.NewScrobbleExplorer(username, retriever, 10)
 	scrobbleExplorer.BufferWindows(10)
 
-	app := newTUIApp(webClient, scrobbleExplorer, username, apiKey)
+	app := newTUIApp(webClient, scrobbleExplorer, 10, username, apiKey)
 	initialScrobbles, err := scrobbleExplorer.FirstPage()
 	if err != nil {
 		log.Fatalf("Failed to get initial page of recent tracks: %v", err)

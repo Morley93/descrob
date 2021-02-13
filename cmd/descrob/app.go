@@ -14,15 +14,17 @@ type app struct {
 	webClient *descrob.LastFMWebClient
 	expl      *descrob.ScrobbleExplorer
 	tracks    []descrob.Scrobble
+	pageSize  int
 }
 
-func newTUIApp(webClient *descrob.LastFMWebClient, expl *descrob.ScrobbleExplorer, user, apiKey string) *app {
+func newTUIApp(webClient *descrob.LastFMWebClient, expl *descrob.ScrobbleExplorer, pageSize int, user, apiKey string) *app {
 	tuiApp, listCtrl := createTviewApp()
 	app := app{
 		Application: tuiApp,
 		listCtrl:    listCtrl,
 		webClient:   webClient,
 		expl:        expl,
+		pageSize:    pageSize,
 	}
 	app.installKeyHandlers()
 	return &app
@@ -61,7 +63,7 @@ func (a *app) installKeyHandlers() {
 
 func (a *app) renderScrobbles(scrobbles []descrob.Scrobble) {
 	a.listCtrl.Clear()
-	for i, scrobble := range scrobbles[:9] {
+	for i, scrobble := range scrobbles[:a.pageSize] {
 		a.listCtrl.AddItem(scrobble.Name, scrobble.Artist, rune(i+'0'), nil)
 	}
 }
