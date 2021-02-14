@@ -64,7 +64,8 @@ func (a *app) installKeyHandlers() {
 func (a *app) renderScrobbles(scrobbles []descrob.Scrobble) {
 	a.listCtrl.Clear()
 	for i, scrobble := range scrobbles[:a.pageSize] {
-		a.listCtrl.AddItem(scrobble.Name, scrobble.Artist, rune(i+'0'), nil)
+		runeOffset := (i + 1) % a.pageSize
+		a.listCtrl.AddItem(scrobble.Name, scrobble.Artist, rune('0'+runeOffset), nil)
 	}
 }
 
