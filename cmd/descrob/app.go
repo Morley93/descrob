@@ -39,7 +39,13 @@ func (a *app) installKeyHandlers() {
 			a.webClient.DeleteTrack(scrobbleToDelete)
 			a.expl.Uncache(scrobbleToDelete)
 			a.renderScrobbles(a.expl.CurrentPage())
-		case tcell.KeyCtrlN:
+		}
+		switch e.Rune() {
+		case 'j':
+			a.listCtrl.SetCurrentItem(a.listCtrl.GetCurrentItem() + 1)
+		case 'k':
+			a.listCtrl.SetCurrentItem(a.listCtrl.GetCurrentItem() - 1)
+		case 'n':
 			// TODO: Handle error
 			scrobs, _ := a.expl.NextPage()
 			if a.expl.PreBufferedWindows() < 3 {
@@ -47,15 +53,9 @@ func (a *app) installKeyHandlers() {
 				go a.expl.BufferWindows(3)
 			}
 			a.renderScrobbles(scrobs)
-		case tcell.KeyCtrlP:
+		case 'p':
 			scrobs := a.expl.PrevPage()
 			a.renderScrobbles(scrobs)
-		}
-		switch e.Rune() {
-		case 'j':
-			a.listCtrl.SetCurrentItem(a.listCtrl.GetCurrentItem() + 1)
-		case 'k':
-			a.listCtrl.SetCurrentItem(a.listCtrl.GetCurrentItem() - 1)
 		}
 		return e
 	})
@@ -83,8 +83,10 @@ func createTviewApp() (*tview.Application, *tview.List) {
 
 func createKeybindView() *tview.TextView {
 	keybinds := []string{
-		"[Ctrl+n] Next page",
-		"[Ctrl+p] Previous page",
+		"[j/↓] Next scrobble",
+		"[k/↑] Previous scrobble",
+		"[n] Next page",
+		"[p] Previous page",
 		"[Bckspc] Unscrobble",
 	}
 	return tview.NewTextView().
