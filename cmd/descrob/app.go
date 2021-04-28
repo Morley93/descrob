@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"strings"
+	"sync"
 
 	"github.com/Morley93/descrob"
 	"github.com/gdamore/tcell/v2"
@@ -16,6 +17,7 @@ type app struct {
 	expl      *descrob.ScrobbleExplorer
 	tracks    []descrob.Scrobble
 	pageSize  int
+	mut       sync.Mutex
 }
 
 func newTUIApp(webClient *descrob.LastFMWebClient, expl *descrob.ScrobbleExplorer, pageSize int, user, apiKey string) *app {
@@ -47,14 +49,21 @@ func (a *app) installKeyHandlers() {
 		case 'k':
 			a.listCtrl.SetCurrentItem(a.listCtrl.GetCurrentItem() - 1)
 		case 'n':
+			a.mut.Lock()
+			defer a.mut.Unlock()
 			// TODO: Handle error
 			scrobs, _ := a.expl.NextPage()
-			if a.expl.PreBufferedWindows() < 3 {
-				// TODO: There's no locking around this
-				go a.expl.BufferWindows(3)
-			}
+			go func() {
+				a.mut.Lock()
+				defer a.mut.Unlock()
+				if a.expl.PreBufferedWindows() < 3 {
+					a.expl.BufferWindows(3)
+				}
+			}()
 			a.renderScrobbles(scrobs)
 		case 'p':
+			a.mut.Lock()
+			defer a.mut.Unlock()
 			scrobs := a.expl.PrevPage()
 			a.renderScrobbles(scrobs)
 		}
