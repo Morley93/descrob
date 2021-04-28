@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"strings"
 
 	"github.com/Morley93/descrob"
@@ -49,7 +50,7 @@ func (a *app) installKeyHandlers() {
 			// TODO: Handle error
 			scrobs, _ := a.expl.NextPage()
 			if a.expl.PreBufferedWindows() < 3 {
-				// TODO: There's no locking around this this
+				// TODO: There's no locking around this
 				go a.expl.BufferWindows(3)
 			}
 			a.renderScrobbles(scrobs)
@@ -63,7 +64,8 @@ func (a *app) installKeyHandlers() {
 
 func (a *app) renderScrobbles(scrobbles []descrob.Scrobble) {
 	a.listCtrl.Clear()
-	for i, scrobble := range scrobbles[:a.pageSize] {
+	lastScrobIndex := int(math.Min(float64(len(scrobbles)), float64(a.pageSize)))
+	for i, scrobble := range scrobbles[:lastScrobIndex] {
 		runeOffset := (i + 1) % a.pageSize
 		a.listCtrl.AddItem(scrobble.Name, scrobble.Artist, rune('0'+runeOffset), nil)
 	}
