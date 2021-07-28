@@ -80,7 +80,7 @@ func (c LastFMWebClient) buildLoginRequest() (*http.Request, error) {
 func (c LastFMWebClient) buildLoginForm() (url.Values, error) {
 	form := url.Values{}
 
-	csrfCookie := findCookieForDomain(c.client.Jar, "https://secure.last.fm", "csrftoken")
+	csrfCookie := findCookieForDomain(c.client.Jar, "https://www.last.fm", "csrftoken")
 	if csrfCookie == nil {
 		return form, errors.New("Failed to find csrf cookie to continue login")
 	}
