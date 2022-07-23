@@ -28,7 +28,7 @@ func NewLastFMWebClient(username, password string) (*LastFMWebClient, error) {
 		client:   http.Client{Jar: jar},
 		username: username,
 		password: password,
-		loginURL: "https://secure.last.fm/login",
+		loginURL: "https://www.last.fm/login",
 	}
 	err = webClient.startSession()
 	if err != nil {
